@@ -1,0 +1,9 @@
+mqtt/mqtt-nodejs/node_modules/
+**/.env
+**/__pycache__
+venv
+
+**/*.env
+!**/*.example.env
+*.pem
+/traefik

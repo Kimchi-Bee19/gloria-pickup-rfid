@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package app.v1.ws;
+
+message ServerWSPacket {
+    reserved 1;
+    oneof packet {
+        FullTrackingUpdate fullTrackingUpdate = 2;
+        TrackingEntry trackingEntry = 3;
+        ServerTime serverTime = 4;
+        PingPong pingPong = 5;
+        ClientConfig clientConfig = 6;
+    }
+}
+
+message ClientWSPacket {
+    reserved 1;
+    oneof packet {
+        PingPong pingPong = 2;
+        AdminPinTracking adminPinTracking = 3;
+        AdminMarkDeparted adminMarkDeparted = 4;
+        AdminReorderTracking adminReorderTracking = 5;
+        AdminManualArrival adminManualArrival = 6;
+    }
+}
+
+enum PingPongType {
+    PING = 0;
+    PONG = 1;
+}
+
+message ClientConfig {
+    oneof config {
+        UnauthenticatedClientConfig unauthenticated = 1;
+        AuthenticatedClientConfig authenticated = 2;
+    }
+}
+
+message UnauthenticatedClientConfig {
+    string adoptionKey = 1;
+}
+
+message AuthenticatedClientConfig {
+    string clientLabel = 1;
+    string title = 2;
+}
+
+message PingPong {
+    PingPongType type = 1;
+}
+
+message ServerTime {
+    uint64 timestamp = 1;
+}
+
+message FullTrackingUpdate {
+    repeated TrackingEntry trackingEntries = 1;
+}
+
+message TrackingEntry {
+    uint64 arrivalDepartureTrackingId = 1;
+    bool isActive = 2;
+    optional bool isPinned = 7;
+    optional double absolutePosition = 8;
+
+    optional uint64 entryTimestampMs = 5;
+    optional VehicleInformation vehicle = 3;
+    repeated StudentInformation students = 4;
+    optional uint64 timeoutTimestampMs = 6;
+}
+
+message StudentInformation {
+    uint64 id = 1;
+    string fullName = 2;
+    string callName = 3;
+    string class = 4;
+}
+
+message VehicleInformation {
+    uint64 id = 1;
+    string licensePlate = 2;
+}
+
+message AdminMetricsUpdate {
+    uint32 connectedReaders = 1;
+    uint32 disconnectedReaders = 2;
+    uint32 connectedLiveDisplays = 3;
+    uint32 disconnectedLiveDisplays = 4;
+}
+
+message AdminMarkDeparted {
+    oneof departureType {
+        uint64 studentId = 1;
+        uint64 trackingEntryId = 2;
+    }
+}
+
+message AdminPinTracking {
+    uint64 trackingEntryId = 1;
+    bool isPinned = 2;
+}
+
+message AdminReorderTracking {
+    uint64 targetTrackingEntryId = 1;
+    oneof relativeTo {
+        uint64 beforeTrackingEntryId = 2;
+        uint64 afterTrackingEntryId = 3;
+    }
+    uint64 clientTimestampMs = 4;
+}
+
+message AdminManualArrival {
+    uint64 vehicleId = 1;
+    uint64 clientTimestampMs = 2;
+}

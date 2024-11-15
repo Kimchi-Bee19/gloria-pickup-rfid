@@ -1,0 +1,4 @@
+git+https://github.com/nathanael6556/py-uhf-reader.git
+paho-mqtt
+protobuf
+python-dotenv

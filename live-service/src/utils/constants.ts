@@ -1,0 +1,1 @@
+export const TRACKING_TIMEOUT_SECONDS = 15 * 60; // 10 minutes

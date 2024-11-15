@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package app.v1;
+
+message StudentDepartureMessage {
+    // Client timestamp in milliseconds
+    uint64 timestamp = 1;
+    bytes tagId = 2;
+}
+
+message VehicleArrivalMessage {
+    // Client timestamp in milliseconds
+    uint64 timestamp = 1;
+    bytes tagId = 2;
+}
+
+message StudentDepartureAdminMessage {
+    // Client timestamp in milliseconds
+    uint64 timestamp = 1;
+    int64 id = 2;
+}
+
+message VehicleArrivalAdminMessage {
+    // Client timestamp in milliseconds
+    uint64 timestamp = 1;
+    int64 id = 2;
+}
+
+message ReaderStatusMessage {
+    bool isOnline = 1;
+    // Client timestamp in milliseconds
+    optional uint64 timestamp = 2;
+    optional string clientId = 3;
+    optional string firmwareVersion = 4;
+    optional string clientInfo = 5;
+}
+
+enum ClientType {
+    STUDENT_READER = 0;
+    VEHICLE_READER = 1;
+}
+
+message SetupInitMessage {
+    uint64 timestamp = 1;
+    string clientId = 2;
+    string firmwareVersion = 3;
+    string clientInfo = 4;
+    ClientType clientType = 5;
+}
+
+message SetupConfigureMessage {
+    string username = 1;
+    string password = 2;
+}

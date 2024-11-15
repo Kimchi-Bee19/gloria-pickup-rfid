@@ -1,0 +1,31 @@
+{
+  "hash": "862b240c",
+  "configHash": "14940e1c",
+  "lockfileHash": "743ac1dd",
+  "browserHash": "8fc33f2d",
+  "optimized": {
+    "flowbite": {
+      "src": "../../node_modules/flowbite/lib/esm/index.js",
+      "file": "flowbite.js",
+      "fileHash": "3f9b2c72",
+      "needsInterop": false
+    },
+    "alpinejs": {
+      "src": "../../node_modules/alpinejs/dist/module.esm.js",
+      "file": "alpinejs.js",
+      "fileHash": "94e82515",
+      "needsInterop": false
+    },
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "86904604",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-PZ5AY32C": {
+      "file": "chunk-PZ5AY32C.js"
+    }
+  }
+}

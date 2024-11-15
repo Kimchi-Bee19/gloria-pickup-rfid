@@ -1,0 +1,13 @@
+@import "@fortawesome/fontawesome-free/css/all.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+    --dark-blue: #1A6091;
+    --light-blue: #61B3E3;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}

@@ -1,0 +1,233 @@
+services:
+    emqx:
+        image: emqx:5
+        restart: on-failure
+        volumes:
+            - emqx_data:/opt/emqx/data
+            - emqx_logs:/opt/emqx/log
+        environment:
+            - EMQX_AUTHENTICATION__1__ENABLE=true
+            - EMQX_AUTHENTICATION__1__MECHANISM=password_based
+            - EMQX_AUTHENTICATION__1__BACKEND=http
+            - EMQX_AUTHENTICATION__1__METHOD=post
+            - EMQX_AUTHENTICATION__1__URL=http://web:8000/api/v1/mqtt/authenticate
+            - EMQX_AUTHENTICATION__1__BODY={username = "$${username}", password = "$${password}", clientid = "$${clientid}"}
+            - EMQX_AUTHENTICATION__1__HEADERS={"Content-Type" = "application/json", "X-Request-Source" = "EMQX"}
+            - EMQX_AUTHENTICATION__1__URL=${EMQX_AUTHENTICATION__1__URL}
+            - EMQX_LISTENERS__TCP__DEFAULT__PROXY_PROTOCOL=true
+            - EMQX_LISTENERS__WS__DEFAULT__PROXY_ADDRESS_HEADER=X-Forwarded-For
+            - EMQX_LISTENERS__TCP__INTERNAL__BIND=0.0.0.0:1884
+        healthcheck:
+            test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+            interval: 5s
+            timeout: 25s
+            retries: 5
+        ports:
+            # - 1883:1883
+            # - 8083:8083
+            # - 8084:8084
+            # - 8883:8883
+            # Management port, better not be exposed to the public
+            - 127.0.0.1:18083:18083
+        labels:
+            - "traefik.enable=true"
+            
+            - 'traefik.http.routers.mqtt.rule=Host(`${DEPLOY_DOMAIN}`)'
+            - "traefik.http.routers.mqtt.entrypoints=mqtt-ws"
+            - "traefik.http.routers.mqtt.tls.certresolver=letsencrypt"
+            - "traefik.http.services.mqtt.loadbalancer.server.port=8083"
+
+            - "traefik.tcp.routers.mqtt.rule=HostSNI(`${DEPLOY_DOMAIN}`)"
+            - "traefik.tcp.routers.mqtt.tls.certresolver=letsencrypt"
+            - "traefik.tcp.routers.mqtt.entrypoints=mqtt"
+            - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
+            - "traefik.tcp.services.mqtt.loadbalancer.proxyprotocol.version=2"
+
+    web:
+        build: ./web
+        restart: on-failure
+        environment:
+            - APP_NAME=${APP_NAME}
+            - APP_ENV=${APP_ENV}
+            - APP_KEY=${APP_KEY}
+            - APP_DEBUG=${APP_DEBUG}
+            - APP_TIMEZONE=${APP_TIMEZONE}
+            - APP_URL=${APP_URL}
+            - APP_LOCALE=${APP_LOCALE}
+            - APP_FALLBACK_LOCALE=${APP_FALLBACK_LOCALE}
+            - APP_FAKER_LOCALE=${APP_FAKER_LOCALE}
+            - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
+            - LOG_CHANNEL=${LOG_CHANNEL}
+            - LOG_LEVEL=${LOG_LEVEL}
+            - DB_CONNECTION=${DB_CONNECTION}
+            - DB_HOST=${DB_HOST}
+            - DB_PORT=${DB_PORT}
+            - DB_DATABASE=${DB_DATABASE}
+            - DB_USERNAME=${DB_USERNAME}
+            - DB_PASSWORD=${DB_PASSWORD}
+            - VITE_APP_NAME=${VITE_APP_NAME}
+            - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+            - OCTANE_SERVER=${OCTANE_SERVER}
+            - JWT_SECRET=${JWT_SECRET}
+            - MQTT_AUTH_IP=${MQTT_AUTH_IP}
+            - MQTT_SETUP_KEY=${MQTT_SETUP_KEY}
+            - MQTT_LIVE_SERVICE_PASSWORD=${MQTT_LIVE_SERVICE_PASSWORD}
+            - LIVE_SERVICE_URL=${LIVE_SERVICE_URL}
+            - LIVE_SERVICE_SHARED_SECRET=${LIVE_SERVICE_SHARED_SECRET}
+            - LIVE_SERVICE_WS_URL=${LIVE_SERVICE_WS_URL}
+            - WITH_SCHEDULER=true
+            - OCTANE_SERVER=frankenphp
+        volumes:
+            - "backend_storage:/var/www/html/storage"
+        labels:
+            - traefik.enable=true
+            - traefik.http.middlewares.gzip.compress=true
+            - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+            - traefik.http.routers.http-rfid-web.entryPoints=http
+            - traefik.http.routers.http-rfid-web.middlewares=redirect-to-https
+            - 'traefik.http.routers.http-rfid-web.rule=Host(`${DEPLOY_DOMAIN}`) && PathPrefix(`/`)'
+            - traefik.http.routers.http-rfid-web.service=http-rfid-web
+            - traefik.http.routers.https-rfid-web.entryPoints=https
+            - traefik.http.routers.https-rfid-web.middlewares=gzip
+            - 'traefik.http.routers.https-rfid-web.rule=Host(`${DEPLOY_DOMAIN}`) && PathPrefix(`/`)'
+            - traefik.http.routers.https-rfid-web.service=https-rfid-web
+            - traefik.http.routers.https-rfid-web.tls.certresolver=letsencrypt
+            - traefik.http.routers.https-rfid-web.tls=true
+            - traefik.http.services.http-rfid-web.loadbalancer.server.port=8000
+            - traefik.http.services.https-rfid-web.loadbalancer.server.port=8000
+
+    web-cli:
+        build: ./web
+        entrypoint: "/bin/sh"
+        tty: true
+        environment:
+            - APP_NAME=${APP_NAME}
+            - APP_ENV=${APP_ENV}
+            - APP_KEY=${APP_KEY}
+            - APP_DEBUG=${APP_DEBUG}
+            - APP_TIMEZONE=${APP_TIMEZONE}
+            - APP_URL=${APP_URL}
+            - APP_LOCALE=${APP_LOCALE}
+            - APP_FALLBACK_LOCALE=${APP_FALLBACK_LOCALE}
+            - APP_FAKER_LOCALE=${APP_FAKER_LOCALE}
+            - BCRYPT_ROUNDS=${BCRYPT_ROUNDS}
+            - LOG_CHANNEL=${LOG_CHANNEL}
+            - LOG_LEVEL=${LOG_LEVEL}
+            - DB_CONNECTION=${DB_CONNECTION}
+            - DB_HOST=${DB_HOST}
+            - DB_PORT=${DB_PORT}
+            - DB_DATABASE=${DB_DATABASE}
+            - DB_USERNAME=${DB_USERNAME}
+            - DB_PASSWORD=${DB_PASSWORD}
+            - VITE_APP_NAME=${VITE_APP_NAME}
+            - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+            - OCTANE_SERVER=${OCTANE_SERVER}
+            - JWT_SECRET=${JWT_SECRET}
+            - MQTT_AUTH_IP=${MQTT_AUTH_IP}
+            - MQTT_SETUP_KEY=${MQTT_SETUP_KEY}
+            - MQTT_LIVE_SERVICE_PASSWORD=${MQTT_LIVE_SERVICE_PASSWORD}
+            - LIVE_SERVICE_URL=${LIVE_SERVICE_URL}
+            - LIVE_SERVICE_SHARED_SECRET=${LIVE_SERVICE_SHARED_SECRET}
+            - LIVE_SERVICE_WS_URL=${LIVE_SERVICE_WS_URL}
+        volumes:
+            - "backend_storage:/var/www/html/storage"
+
+    postgres:
+        image: postgres:16-alpine
+        restart: on-failure
+        environment:
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_DATABASE}
+        ports:
+            - "127.0.0.1:5432:5432"
+        volumes:
+            - postgres:/var/lib/postgresql/data
+
+    live-service:
+        build: ./live-service
+        restart: on-failure
+        # ports:
+        #   - "3002:3001"
+        environment:
+            - DEBUG=${LIVE_SERVICE_DEBUG}
+            - CLI_SETTINGS_PATH=/var/www/html/reader-config.json
+            - MQTT_LIVE_SERVICE_USERNAME=liveservice
+            - MQTT_LIVE_SERVICE_PASSWORD=${MQTT_LIVE_SERVICE_PASSWORD}
+            - DATABASE_URL=${DATABASE_URL}
+            - MQTT_URL=${MQTT_URL}
+            - BACKEND_IP_CIDR=${BACKEND_IP_CIDR}
+            - BACKEND_URL=${BACKEND_URL}
+            - JWT_SECRET=${JWT_SECRET}
+            - MQTT_SETUP_KEY=${MQTT_SETUP_KEY}
+        labels:
+            - traefik.enable=true
+            - traefik.http.middlewares.gzip.compress=true
+            - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+            - traefik.http.routers.http-0-rfid-live-service.entryPoints=http
+            - traefik.http.routers.http-0-rfid-live-service.middlewares=redirect-to-https
+            - 'traefik.http.routers.http-0-rfid-live-service.rule=Host(`${DEPLOY_DOMAIN}`) && PathPrefix(`/ws`)'
+            - traefik.http.routers.http-0-rfid-live-service.service=http-0-rfid-live-service
+            - traefik.http.routers.https-0-rfid-live-service.entryPoints=https
+            - 'traefik.http.routers.https-0-rfid-live-service.middlewares=gzip'
+            - 'traefik.http.routers.https-0-rfid-live-service.rule=Host(`${DEPLOY_DOMAIN}`) && PathPrefix(`/ws`)'
+            - traefik.http.routers.https-0-rfid-live-service.service=https-0-rfid-live-service
+            - traefik.http.routers.https-0-rfid-live-service.tls.certresolver=letsencrypt
+            - traefik.http.routers.https-0-rfid-live-service.tls=true
+            - traefik.http.services.http-0-rfid-live-service.loadbalancer.server.port=3001
+            - traefik.http.services.https-0-rfid-live-service.loadbalancer.server.port=3001
+        
+    traefik:
+        image: 'traefik:v3.1'
+        restart: unless-stopped
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '80:80'
+            - '443:443'
+            - '443:443/udp'
+            - '8080:8080'
+            - "8883:8883"
+            - "8084:8084"
+        healthcheck:
+            test: 'wget -qO- http://localhost:80/ping || exit 1'
+            interval: 4s
+            timeout: 2s
+            retries: 5
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock:ro'
+            - './traefik:/traefik'
+        command:
+            - '--ping=true'
+            - '--ping.entrypoint=http'
+            - '--api.dashboard=true'
+            - '--api.insecure=false'
+            - '--entrypoints.http.address=:80'
+            - '--entrypoints.https.address=:443'
+            - '--entrypoints.http.http.encodequerysemicolons=true'
+            - '--entryPoints.http.http2.maxConcurrentStreams=50'
+            - '--entrypoints.https.http.encodequerysemicolons=true'
+            - '--entryPoints.https.http2.maxConcurrentStreams=50'
+            - '--entrypoints.https.http3'
+            - '--providers.docker.exposedbydefault=false'
+            - '--providers.file.directory=/traefik/dynamic/'
+            - '--providers.file.watch=true'
+            - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
+            - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
+            - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http'
+            - '--providers.docker=true'
+
+            - '--entrypoints.mqtt.address=:8883'
+            - '--entrypoints.mqtt-ws.address=:8084'
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.traefik.entrypoints=http
+            - traefik.http.routers.traefik.service=api@internal
+            - traefik.http.services.traefik.loadbalancer.server.port=8080
+
+volumes:
+    postgres:
+    emqx_data:
+    emqx_logs:
+    backend_storage:
+
